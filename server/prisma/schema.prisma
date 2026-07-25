@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(MEMBER)
+
+  assignedLeads Lead[] @relation("AssignedLeads")
+  createdLeads  Lead[] @relation("CreatedLeads")
+
+  notes      Note[]
+  activities Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id      Int    @id @default(autoincrement())
+  name    String
+  email   String
+  phone   String?
+  company String?
+
+  status LeadStatus @default(NEW)
+
+  assignedToId Int?
+  assignedTo   User? @relation("AssignedLeads", fields: [assignedToId], references: [id])
+
+  createdById Int
+  createdBy   User @relation("CreatedLeads", fields: [createdById], references: [id])
+
+  notes      Note[]
+  activities Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id      Int    @id @default(autoincrement())
+  content String
+
+  leadId Int
+  userId Int
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Activity {
+  id     Int    @id @default(autoincrement())
+  action String
+
+  leadId        Int
+  performedById Int
+
+  lead        Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  performedBy User @relation(fields: [performedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
